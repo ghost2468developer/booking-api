@@ -43,6 +43,9 @@ model Booking {
   mechanicId  String
   date        DateTime
   status      BookingStatus @default(PENDING)
+  workingDays String? // e.g. "MON,TUE,WED,THU,FRI"
+  startHour   String? // e.g. "09:00"
+  endHour     String? // e.g. "17:00"
   user        User @relation("UserBookings", fields: [userId], references: [id])
   mechanic    User @relation("MechanicBookings", fields: [mechanicId], references: [id])
   createdAt   DateTime @default(now())
