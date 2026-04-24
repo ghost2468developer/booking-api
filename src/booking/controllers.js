@@ -198,3 +198,66 @@ exports.getAvailableSlots = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const userRole = req.user.role
+    const { id } = req.params
+
+    // 1. Find booking
+    const booking = await prisma.booking.findUnique({
+      where: { id }
+    })
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" })
+    }
+
+    // 2. Prevent cancelling completed bookings
+    if (booking.status === "COMPLETED") {
+      return res.status(400).json({
+        message: "Completed bookings cannot be cancelled"
+      })
+    }
+
+    // USER RULES
+    if (userRole === "USER") {
+      if (booking.userId !== userId) {
+        return res.status(403).json({
+          message: "You can only cancel your own bookings"
+        })
+      }
+
+      if (booking.status === "CANCELLED") {
+        return res.status(400).json({
+          message: "Booking already cancelled"
+        })
+      }
+    }
+
+    // MECHANIC RULES
+    if (userRole === "MECHANIC") {
+      if (booking.mechanicId !== userId) {
+        return res.status(403).json({
+          message: "You can only manage your assigned bookings"
+        })
+      }
+    }
+
+    // 3. Cancel booking
+    const cancelled = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: "CANCELLED"
+      }
+    })
+
+    res.json({
+      message: "Booking cancelled successfully",
+      booking: cancelled
+    })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
