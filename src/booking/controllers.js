@@ -1,49 +1,61 @@
 const prisma = require("../prisma")
 
-/**
- * CREATE BOOKING (USER ONLY)
- */
+const TIME_SLOTS = [
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00"
+]
+
 exports.createBooking = async (req, res) => {
   try {
     const userId = req.user.id
-    const { mechanicId, date } = req.body
+    const { mechanicId, date, timeSlot } = req.body
 
-    // 1. Check if mechanic exists
+    // validate time slot
+    if (!TIME_SLOTS.includes(timeSlot)) {
+      return res.status(400).json({ message: "Invalid time slot" })
+    }
+
+    // check mechanic
     const mechanic = await prisma.user.findUnique({
       where: { id: mechanicId }
     })
 
     if (!mechanic || mechanic.role !== "MECHANIC") {
-      return res.status(400).json({ message: "Invalid mechanic" })
+      return res.status(400).json({ message: "Invalid mechanic" });
     }
 
-    // 2. Prevent double booking (same mechanic + same time)
+    // prevent double booking
     const conflict = await prisma.booking.findFirst({
       where: {
         mechanicId,
         date: new Date(date),
-        status: {
-          not: "CANCELLED"
-        }
+        timeSlot,
+        status: { not: "CANCELLED" }
       }
     })
 
     if (conflict) {
       return res.status(400).json({
-        message: "This mechanic is already booked for this time"
+        message: "Slot already booked"
       })
     }
 
-    // 3. Create booking
     const booking = await prisma.booking.create({
       data: {
         userId,
         mechanicId,
-        date: new Date(date)
+        date: new Date(date),
+        timeSlot
       }
     })
 
-    res.json(booking);
+    res.json(booking)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
