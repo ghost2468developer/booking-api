@@ -62,3 +62,25 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message })
   }
 }
+
+exports.getMechanics = async (req, res) => {
+  try {
+    const mechanics = await prisma.user.findMany({
+      where: {
+        role: "MECHANIC"
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        workingDays: true,
+        startHour: true,
+        endHour: true
+      }
+    })
+
+    res.json(mechanics);
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
