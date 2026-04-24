@@ -132,3 +132,69 @@ exports.getMechanicBookings = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
+
+exports.getAvailableSlots = async (req, res) => {
+  try {
+    const { mechanicId, date } = req.query
+
+    // 1. Get mechanic
+    const mechanic = await prisma.user.findUnique({
+      where: { id: mechanicId }
+    })
+
+    if (!mechanic || mechanic.role !== "MECHANIC") {
+      return res.status(400).json({ message: "Invalid mechanic" })
+    }
+
+    // 2. Check working days
+    const day = getDayName(date)
+
+    if (mechanic.workingDays) {
+      const allowedDays = mechanic.workingDays.split(",")
+
+      if (!allowedDays.includes(day)) {
+        return res.json({
+          date,
+          mechanicId,
+          availableSlots: [],
+          message: `Mechanic does not work on ${day}`
+        })
+      }
+    }
+
+    // 3. Get existing bookings for that day
+    const bookings = await prisma.booking.findMany({
+      where: {
+        mechanicId,
+        date: new Date(date),
+        status: { not: "CANCELLED" }
+      },
+      select: {
+        timeSlot: true
+      }
+    })
+
+    const bookedSlots = bookings.map((b) => b.timeSlot)
+
+    // 4. Filter available slots
+    let availableSlots = TIME_SLOTS.filter(
+      (slot) => !bookedSlots.includes(slot)
+    )
+
+    // 5. Apply working hours filter
+    if (mechanic.startHour && mechanic.endHour) {
+      availableSlots = availableSlots.filter((slot) => {
+        return slot >= mechanic.startHour && slot <= mechanic.endHour
+      })
+    }
+
+    res.json({
+      date,
+      mechanicId,
+      availableSlots,
+      bookedSlots
+    })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
