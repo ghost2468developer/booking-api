@@ -27,7 +27,6 @@ model User {
   bookingsAsUser     Booking[] @relation("UserBookings")
   bookingsAsMechanic Booking[] @relation("MechanicBookings")
   createdAt DateTime @default(now())
-  timeSlot  String
 }
 
 enum BookingStatus {
