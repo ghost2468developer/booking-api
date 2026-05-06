@@ -253,3 +253,28 @@ exports.cancelBooking = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
+
+exports.completeBooking = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const booking = await prisma.booking.findUnique({
+      where: { id }
+    })
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" })
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: "COMPLETED"
+      }
+    })
+
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
