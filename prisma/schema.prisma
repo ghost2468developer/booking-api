@@ -27,6 +27,9 @@ model User {
   bookingsAsUser     Booking[] @relation("UserBookings")
   bookingsAsMechanic Booking[] @relation("MechanicBookings")
   createdAt DateTime @default(now())
+  workingDays   String?   // 👈 ADD THIS
+  startHour     String?   // 👈 ADD THIS
+  endHour       String?   // 👈 ADD THIS
 }
 
 enum BookingStatus {
