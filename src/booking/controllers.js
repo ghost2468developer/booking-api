@@ -137,7 +137,6 @@ exports.getAvailableSlots = async (req, res) => {
   try {
     const { mechanicId, date } = req.query
 
-    // 1. Get mechanic
     const mechanic = await prisma.user.findUnique({
       where: { id: mechanicId }
     })
@@ -146,54 +145,47 @@ exports.getAvailableSlots = async (req, res) => {
       return res.status(400).json({ message: "Invalid mechanic" })
     }
 
+    // 1. Get day (MON, TUE, etc.)
+    const day = new Date(date)
+      .toLocaleDateString("en-US", { weekday: "short" })
+      .toUpperCase()
+
     // 2. Check working days
-    const day = getDayName(date)
+    const allowedDays = mechanic.workingDays
+      ? mechanic.workingDays.split(",")
+      : []
 
-    if (mechanic.workingDays) {
-      const allowedDays = mechanic.workingDays.split(",")
+    const isWorkingDay = allowedDays.includes(day)
 
-      if (!allowedDays.includes(day)) {
-        return res.json({
-          date,
-          mechanicId,
-          availableSlots: [],
-          message: `Mechanic does not work on ${day}`
-        })
-      }
+    if (!isWorkingDay) {
+      return res.json({
+        available: false,
+        message: `Mechanic does not work on ${day}`,
+        date,
+        mechanicId
+      })
     }
 
-    // 3. Get existing bookings for that day
+    // 3. Check if already booked on that day
     const bookings = await prisma.booking.findMany({
       where: {
         mechanicId,
         date: new Date(date),
         status: { not: "CANCELLED" }
-      },
-      select: {
-        timeSlot: true
       }
     })
 
-    const bookedSlots = bookings.map((b) => b.timeSlot)
+    const isFullyBooked = bookings.length > 0
 
-    // 4. Filter available slots
-    let availableSlots = TIME_SLOTS.filter(
-      (slot) => !bookedSlots.includes(slot)
-    )
-
-    // 5. Apply working hours filter
-    if (mechanic.startHour && mechanic.endHour) {
-      availableSlots = availableSlots.filter((slot) => {
-        return slot >= mechanic.startHour && slot <= mechanic.endHour
-      })
-    }
-
-    res.json({
+    // 4. Return simplified response
+    return res.json({
+      available: !isFullyBooked,
       date,
       mechanicId,
-      availableSlots,
-      bookedSlots
+      day,
+      bookings
     })
+
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
