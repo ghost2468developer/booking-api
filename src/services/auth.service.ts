@@ -9,20 +9,22 @@ import {
 } from '../utils/token'
 import { sendResetEmail } from '../utils/email'
 
-export const signup = async (name: string, email: string, password: string) => {
+export const signup = async ( name: string, email: string, password: string ) => {
 	if (!email || !password) throw new Error('Email and password required')
-
 	const existing = await prisma.user.findUnique({ where: { email } })
 	if (existing) throw new Error('Email already in use')
-
-	const hashed = await hashPassword(password);
+	const hashed = await hashPassword(password)
 	const user = await prisma.user.create({
-		data: { name, email, password: hashed }
+		data: {
+			name,
+			email,
+			password: hashed,
+			role: 'USER'
+		}
 	})
 
-	const accessToken = generateAccessToken(user.id)
-	const refreshToken = generateRefreshToken(user.id)
-
+	const accessToken = generateAccessToken(user.id, user.role)
+	const refreshToken = generateRefreshToken(user.id, user.role)
 	return { accessToken, refreshToken }
 }
 
@@ -40,21 +42,24 @@ export const login = async (email: string, password: string) => {
 		return { requires2FA: true, tempToken }
 	}
 
-	const accessToken = generateAccessToken(user.id)
-	const refreshToken = generateRefreshToken(user.id)
+	const accessToken = generateAccessToken(user.id, user.role)
+	const refreshToken = generateRefreshToken(user.id, user.role)
 
 	return { accessToken, refreshToken }
 }
 
 export const refreshToken = (token: string) => {
 	if (!token) throw new Error('No token provided')
-
 	try {
-		const payload = verifyRefreshToken(token)
-
-		const newAccessToken = generateAccessToken(payload.userId)
-		const newRefreshToken = generateRefreshToken(payload.userId)
-
+		const payload = verifyRefreshToken(token);
+		const newAccessToken = generateAccessToken(
+			payload.userId,
+			payload.role
+		)
+		const newRefreshToken = generateRefreshToken(
+			payload.userId,
+			payload.role
+		)
 		return {
 			accessToken: newAccessToken,
 			refreshToken: newRefreshToken

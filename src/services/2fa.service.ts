@@ -58,8 +58,8 @@ export const verify2FALogin = async (userId: string, token: string) => {
 
 	if (!isValid) throw new Error('Invalid 2FA code')
 
-	const accessToken = generateAccessToken(user.id)
-	const refreshToken = generateRefreshToken(user.id)
+	const accessToken = generateAccessToken(userId, user.role)
+	const refreshToken = generateRefreshToken(userId, user.role)
 
 	return { accessToken, refreshToken }
 }

@@ -13,16 +13,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  MECHANIC
+  NAIL_TECHNICIAN
+  ADMIN
+}
+
 model User {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   name                String
-  email               String    @unique
+  email               String   @unique
   password            String
-  twoFactorEnabled    Boolean   @default(false)
+  role                Role     @default(USER)
+
+  twoFactorEnabled    Boolean  @default(false)
   twoFactorSecret     String?
   tempTwoFactorSecret String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+
   resetToken          String?
   resetTokenExp       DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // 🔥 RELATIONS (REQUIRED)
+  customerBookings    Booking[] @relation("CustomerBookings")
+  providerBookings    Booking[] @relation("ProviderBookings")
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+
+  customerId  String
+  customer    User     @relation("CustomerBookings", fields: [customerId], references: [id])
+
+  providerId  String
+  provider    User     @relation("ProviderBookings", fields: [providerId], references: [id])
+
+  serviceType String   // "MECHANIC" | "NAIL_TECHNICIAN"
+  status      String   @default("PENDING")
+  date        DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
