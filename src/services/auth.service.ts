@@ -7,6 +7,7 @@ import {
 	generateResetToken,
 	signTemp2FAToken,
 } from '../utils/token';
+import { sendResetEmail } from '../utils/email';
 
 export const signup = async (name: string, email: string, password: string) => {
 	if (!email || !password) throw new Error('Email and password required');
@@ -52,19 +53,21 @@ export const refreshToken = (token: string) => {
 		const payload = verifyRefreshToken(token);
 
 		const newAccessToken = generateAccessToken(payload.userId);
-
-		// Optional: rotate refresh token
 		const newRefreshToken = generateRefreshToken(payload.userId);
 
-		return { accessToken: newAccessToken, refreshToken: newRefreshToken };
-	} catch (err) {
+		return {
+			accessToken: newAccessToken,
+			refreshToken: newRefreshToken,
+		};
+	} catch {
 		throw new Error('Invalid or expired refresh token');
 	}
 };
 
 export const forgotPassword = async (email: string) => {
 	const user = await prisma.user.findUnique({ where: { email } });
-	if (!user) return; // Don't reveal user existence
+	// Don't reveal if user exists
+	if (!user) return;
 
 	const { token, expiry } = generateResetToken();
 
@@ -76,10 +79,11 @@ export const forgotPassword = async (email: string) => {
 		},
 	});
 
-	// In real app: send email here
-	console.log(
-		`🔗 Password reset link: http://localhost:3001/reset-password?token=${token}`
-	);
+	// 🔥 TEMP: Console log (for testing only)
+	// console.log(
+	// 	`🔗 Password reset link: http://localhost:4000/reset-password?token=${token}`
+	// );
+	await sendResetEmail(user.email, token);
 };
 
 export const resetPassword = async (token: string, newPassword: string) => {

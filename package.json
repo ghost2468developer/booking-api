@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-"scripts": {
-  "dev": "concurrently \"npm run dev:server\" \"npm run studio\"",
-  "dev:server": "tsx watch src/index.ts",
-  "studio": "prisma studio",
-  "migrate": "prisma migrate dev",
-  "deploy": "prisma migrate deploy"
-},
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run studio\"",
+    "dev:server": "tsx watch src/index.ts",
+    "studio": "prisma studio",
+    "migrate": "prisma migrate dev",
+    "deploy": "prisma migrate deploy"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -23,7 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "otplib": "^12.0.1",
     "prisma": "^6.5.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "resend": "^6.12.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
